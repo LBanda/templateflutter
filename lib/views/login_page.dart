@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_template/views/register_page.dart';
 import 'package:flutter_template/widgets/fields/textfield.dart';
 import 'package:provider/provider.dart';
 
@@ -46,7 +47,7 @@ class _loginPageState extends State<loginPage> {
                   labelText: 'Password',
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscureText ? Icons.visibility : Icons.visibility_off,
+                      _obscureText ? Icons.visibility : Icons.visibility_off, size: 20,
                     ),
                     onPressed: () {
                       setState(() {
@@ -69,6 +70,7 @@ class _loginPageState extends State<loginPage> {
                         'Por favor, complete todos los campos');
                     return;
                   }
+                  //Pueden agregar mas validaciones antes de pasar al back
 
                   authService.autenticando = true;
 
@@ -77,6 +79,8 @@ class _loginPageState extends State<loginPage> {
                   authService.autenticando = false;
 
                   if (loginOk) {
+                    usernameCrtl.clear();
+                    passwordCrtl.clear();
                     // ignore: use_build_context_synchronously
                     Navigator.push(
                       context,
@@ -93,6 +97,17 @@ class _loginPageState extends State<loginPage> {
                     .autenticando, 
               ),
               const SizedBox(height: 15),
+              const Text('o'),
+              const SizedBox(height: 15,),
+              TextButton(
+                onPressed: () {
+                   Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const RegisterPage()),
+                    );
+                },
+                child: const Text('Crear una nueva cuenta'),
+              ),
             ],
           ),
         ),

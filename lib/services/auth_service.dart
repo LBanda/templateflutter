@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 
 class AuthService with ChangeNotifier {
+  final String urlApi = "http://localhost:8000/graphql/";
   bool _auntenticando = false;
 
   bool get autenticando => _auntenticando;
@@ -12,7 +13,7 @@ class AuthService with ChangeNotifier {
   
   Future<bool> login(String username, String password) async {
   final HttpLink httpLink = HttpLink(
-    "http://localhost:8000/graphql/",
+    urlApi,
   );
 
   final GraphQLClient client = GraphQLClient(
@@ -44,5 +45,43 @@ class AuthService with ChangeNotifier {
   
   return token != null;
 }
+
+Future<bool> register(String email, String username, String password) async {
+    final HttpLink httpLink = HttpLink(
+      urlApi,
+    );
+
+    final GraphQLClient client = GraphQLClient(
+      cache: GraphQLCache(),
+      link: httpLink,
+    );
+
+    final MutationOptions options = MutationOptions(
+      document: gql('''
+        mutation RegisterUser(\$email: String!, \$username: String!, \$password: String!) {
+          createUser(email: \$email, username: \$username, password: \$password) {
+            user {
+              id
+              username
+              email
+            }
+          }
+        }
+      '''),
+      variables: <String, dynamic>{
+        'email': email,
+        'username': username,
+        'password': password,
+      },
+    );
+
+    final QueryResult result = await client.mutate(options);
+
+    if (result.hasException) {
+      return false;
+    }
+
+    return true;
+  }
 
 }
