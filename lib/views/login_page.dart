@@ -76,7 +76,7 @@ class _loginPageState extends State<loginPage> {
 
                   authService.autenticando = false;
 
-                  if (loginOk != null) {
+                  if (loginOk) {
                     // ignore: use_build_context_synchronously
                     Navigator.push(
                       context,

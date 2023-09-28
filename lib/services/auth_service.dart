@@ -10,34 +10,39 @@ class AuthService with ChangeNotifier {
     notifyListeners();
   }
   
-  Future<String?> login(String username, String password) async {
-    final HttpLink httpLink = HttpLink(
-  "Link to your GraphQL API",
-);
+  Future<bool> login(String username, String password) async {
+  final HttpLink httpLink = HttpLink(
+    "http://localhost:8000/graphql/",
+  );
 
-final GraphQLClient client = GraphQLClient(
-  cache: GraphQLCache(),
-  link: httpLink,
-);
+  final GraphQLClient client = GraphQLClient(
+    cache: GraphQLCache(),
+    link: httpLink,
+  );
 
-final MutationOptions options = MutationOptions(
-  document: gql('''
-    Your Mutation
-  '''),
-  variables: <String, dynamic>{
-    'username': username,
-    'password': password,
-  },
-);
+  final MutationOptions options = MutationOptions(
+    document: gql('''
+      mutation LoginUser(\$username: String!, \$password: String!) {
+        tokenAuth(username: \$username, password: \$password) {
+          token
+        }
+      }
+    '''),
+    variables: <String, dynamic>{
+      'username': username,
+      'password': password,
+    },
+  );
 
-final QueryResult result = await client.mutate(options);
+  final QueryResult result = await client.mutate(options);
 
-if (result.hasException) {
-  return null;
+  if (result.hasException) {
+    return false; 
+  }
+
+  final String? token = result.data?['tokenAuth']['token'];
+  
+  return token != null;
 }
 
-final String? token = result.data?['tokenAuth']['token'];
-
-return token;
-  }
 }
