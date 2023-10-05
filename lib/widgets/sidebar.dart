@@ -27,8 +27,8 @@ class _SideBarState extends State<SideBar> {
           padding: const EdgeInsets.symmetric(),
           children: [
             UserAccountsDrawerHeader(
-              accountName: Text('Nombre del usuario'),
-              accountEmail: Text('Correo del usuario'),
+              accountName: const Text('Nombre del usuario'),
+              accountEmail: const Text('Correo del usuario'),
               currentAccountPicture: CircleAvatar(
                 child: ClipOval(
                   child: Image.network('assets/images/profile-icon.jpg',
