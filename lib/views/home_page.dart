@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -12,202 +15,204 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final TextEditingController ageController = TextEditingController();
-  final TextEditingController sexController = TextEditingController();
-  final TextEditingController cpController = TextEditingController();
-  final TextEditingController trestbpsController = TextEditingController();
-  final TextEditingController cholController = TextEditingController();
-  final TextEditingController fbsController = TextEditingController();
-  final TextEditingController restecgController = TextEditingController();
-  final TextEditingController thalachController = TextEditingController();
-  final TextEditingController exangController = TextEditingController();
-  final TextEditingController oldpeakController = TextEditingController();
-  final TextEditingController slopeController = TextEditingController();
-  final TextEditingController caController = TextEditingController();
-  final TextEditingController thalController = TextEditingController();
+  final TextEditingController hourController = TextEditingController();
+  final TextEditingController junctionController = TextEditingController();
+  final TextEditingController urlUserController = TextEditingController();
 
   void _openDrawer(BuildContext context) {
     _scaffoldKey.currentState!.openDrawer();
   }
 
-  String? scoreText;
+  String generateSHA() {
+  final now = DateTime.now().toString(); 
+  final bytes = utf8.encode(now);
+  final sha = sha1.convert(bytes); 
+  return sha.toString();
+}
 
-  Future<void> getScore() async {
-    try {
-      String endpoint = 'https://deployml-service-jazaelog.cloud.okteto.net/score';
-      final response = await Dio().post(endpoint, data: {
-        "age": int.tryParse(ageController.text) ?? 0,
-        "sex": int.tryParse(sexController.text) ?? 0,
-        "cp": int.tryParse(cpController.text) ?? 0,
-        "trestbps": int.tryParse(trestbpsController.text) ?? 0,
-        "chol": int.tryParse(cholController.text) ?? 0,
-        "fbs": int.tryParse(fbsController.text) ?? 0,
-        "restecg": int.tryParse(restecgController.text) ?? 0,
-        "thalach": int.tryParse(thalachController.text) ?? 0,
-        "exang": int.tryParse(exangController.text) ?? 0,
-        "oldpeak": double.tryParse(oldpeakController.text) ?? 0.0,
-        "slope": int.tryParse(slopeController.text) ?? 0,
-        "ca": int.tryParse(caController.text) ?? 0,
-        "thal": int.tryParse(thalController.text) ?? 0,
-      });
+  String? trafficStatus;
+  String? reTrain;
+  final Color greenColor = Colors.green;
+  final Color redColor = Colors.red;
 
-      setState(() {
-        scoreText = response.data.toString();
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error: $e');
+  Future<void> reTrainModel(String urlUser) async {
+  try {
+    final String url = 'https://api.github.com/repos/JazaeloG/ModeloTrafico/dispatches';
+    final shaGenerate = generateSHA();
+
+    final Map<String, dynamic> requestBody = {
+      "event_type": "tm_ci_cd",
+      "client_payload": {
+        "dataseturl": urlUser,
+        "sha": shaGenerate,
+      }
+    };
+
+    final String basicAuth = 'Bearer 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';
+
+    final dio = Dio();
+
+    dio.options.headers['Accept'] = 'application/vnd.github.v3+json';
+    dio.options.headers['Authorization'] = basicAuth;
+
+    final response = await dio.post(
+      url,
+      data: jsonEncode(requestBody),
+    );
+
+    if (response.statusCode == 204) {
+      print('Solicitud enviada con éxito');
+    } else {
+      print('Error al enviar la solicitud: ${response.statusCode}');
+    }
+  } catch (error) {
+    print('Error: $error');
+  }
+}
+
+  Future<void> getTrafficStatus() async {
+  try {
+    String endpoint = 'https://traffic-model-service-jazaelog.cloud.okteto.net/predict';
+    final response = await Dio().post(endpoint, data: {
+      "DateTime": hourController.text, 
+      "Junction": int.tryParse(junctionController.text) ?? 0,  
+    });
+
+    if (response.data != null && response.data is Map) {
+      final isTraffic = response.data['is_traffic'];
+      if (isTraffic != null) {
+        setState(() {
+          trafficStatus = isTraffic ? 'true' : 'false';
+        });
+        return;
       }
     }
+    
+    setState(() {
+      trafficStatus = 'Respuesta inesperada';
+    });
+  } catch (e) {
+    if (kDebugMode) {
+      print('Error: $e');
+    }
   }
+}
+
+
+
+  void _showStatusDialog(String? status) {
+    status = trafficStatus;
+  if (status != null) {
+    final bgColor = status == 'false' ? greenColor : redColor;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Estado de Tráfico'),
+          content: Text(status == 'true' ? 'Habra trafico' : 'No habra trafico'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cerrar'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+          backgroundColor: bgColor,
+        );
+      },
+    );
+  }
+}
+
 
   @override
   void dispose() {
-    ageController.dispose();
-    sexController.dispose();
-    cpController.dispose();
-    trestbpsController.dispose();
-    cholController.dispose();
-    fbsController.dispose();
-    restecgController.dispose();
-    thalachController.dispose();
-    exangController.dispose();
-    oldpeakController.dispose();
-    slopeController.dispose();
-    caController.dispose();
-    thalController.dispose();
+    hourController.dispose();
+    junctionController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      appBar: AppBar(
-        backgroundColor: const Color.fromARGB(0, 255, 255, 255),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.menu,
-            color: Colors.black,
-          ),
-          onPressed: () => _openDrawer(context),
+  return Scaffold(
+    key: _scaffoldKey,
+    appBar: AppBar(
+      backgroundColor: const Color.fromARGB(0, 255, 255, 255),
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(
+          Icons.menu,
+          color: Colors.black,
         ),
+        onPressed: () => _openDrawer(context),
       ),
-      drawer: const SideBar(),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(64.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              TextField(
-                controller: ageController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Age',border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.all(12.0)),
+    ),
+    drawer: const SideBar(),
+    body: Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(64.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            TextField(
+              controller: hourController,
+              keyboardType: TextInputType.text, 
+              decoration: const InputDecoration(
+                labelText: 'Hora',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.all(12.0),
               ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: sexController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Sex',border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.all(12.0)),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: junctionController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Calle/Intersección',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.all(12.0),
               ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: cpController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Cp',border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.all(12.0)),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: trestbpsController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Trestbps',border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.all(12.0)),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: cholController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Chol',border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.all(12.0)),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: fbsController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Fbs',border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.all(12.0)),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: restecgController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Restecg',border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.all(12.0)),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: thalachController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Thalach',border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.all(12.0)),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: exangController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Exang',border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.all(12.0)),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: oldpeakController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Oldpeak',border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.all(12.0)),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: slopeController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Slope',border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.all(12.0)),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: caController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Ca',border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.all(12.0)),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: thalController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Thal',border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.all(12.0)),
-              ),
-              const SizedBox(height: 20),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                getTrafficStatus();
+              },
+              child: const Text('Obtener Estado de Tráfico'),
+            ),
+            const SizedBox(height: 20),
+            if (trafficStatus != null)
               ElevatedButton(
                 onPressed: () {
-                  getScore();
+                  _showStatusDialog(trafficStatus!);
                 },
-                child: const Text('Obtener Score'),
+                child: const Text('Ver Estado'),
+              ),
+            TextField(
+                controller: urlUserController, 
+                keyboardType: TextInputType.url, 
+                decoration: const InputDecoration(
+                  labelText: 'URL de datos',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.all(12.0),
+                ),
               ),
               const SizedBox(height: 20),
-              if (scoreText != null)
-                Text(
-                  'Resultado: $scoreText',
-                  style: const TextStyle(fontSize: 18),
-                ),
-            ],
-          ),
+
+              ElevatedButton(
+                onPressed: () {
+                  reTrainModel(urlUserController.text);
+                },
+                child: const Text('Enviar Solicitud'),
+              ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
+
 }
