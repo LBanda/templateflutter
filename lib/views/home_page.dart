@@ -72,12 +72,31 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> getTrafficStatus() async {
   try {
-    String endpoint = 'https://traffic-model-service-jazaelog.cloud.okteto.net/predict';
+    //String endpoint = 'https://traffic-model-service-jazaelog.cloud.okteto.net/predict';
+    String endpoint = 'https://heart-model-service-lbanda.cloud.okteto.net/score';
+    /*
     final response = await Dio().post(endpoint, data: {
       "DateTime": hourController.text, 
       "Junction": int.tryParse(junctionController.text) ?? 0,  
     });
+    */
+    final response = await Dio().post(endpoint, data: {
+      "age": 64,
+      "sex": 1,
+      "cp": 3,
+      "trestbps": 120,
+      "chol": 267,
+      "fbs": 0,
+      "restecg": 0,
+      "thalach": 99,
+      "exang": 1,
+      "oldpeak": 1.8,
+      "slope": 1,
+      "ca": 2,
+      "thal": 2
+    });
 
+/*
     if (response.data != null && response.data is Map) {
       final isTraffic = response.data['is_traffic'];
       if (isTraffic != null) {
@@ -86,6 +105,20 @@ class _HomePageState extends State<HomePage> {
         });
         return;
       }
+    }
+*/
+
+    if (response != null && response is Map) {
+      //final isTraffic = response.score;
+
+      print(response);
+
+      /*if (isTraffic != null) {
+        setState(() {
+          trafficStatus = response.score;
+        });
+        return;
+      }*/
     }
     
     setState(() {
