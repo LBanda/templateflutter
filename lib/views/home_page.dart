@@ -108,7 +108,7 @@ class _HomePageState extends State<HomePage> {
     }
 */
 
-    if (response != null && response is Map) {
+    if (response != null) {
       //final isTraffic = response.score;
 
       print(response);
